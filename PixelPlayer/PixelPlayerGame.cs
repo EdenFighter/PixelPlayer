@@ -138,6 +138,8 @@ namespace PixelPlayer
             //Player Input
             player.movement = new Vector2(state.ThumbSticks.Left.X * player.speed * (float)gameTime.ElapsedGameTime.TotalSeconds, -(state.ThumbSticks.Left.Y * player.jumpEnergy * (float)gameTime.ElapsedGameTime.TotalSeconds));
 
+            gamefielPosition -= new Vector2(state.ThumbSticks.Right.X * gameSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds, -(state.ThumbSticks.Right.Y * gameSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds));
+
             //gamefielPosition += (10 * playerVelocity * (float)gameTime.ElapsedGameTime.TotalSeconds);
 
             //Collision
