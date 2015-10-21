@@ -57,9 +57,20 @@ namespace PixelPlayer
                 }
             }
 
-            for (int x = 5; x < level.mapwidth; x++)
+            for (int x = 5; x < level.mapwidth - 6; x++)
             {
                 level.Blocks[x, 13] = new Block(materials[1]);
+            }
+            level.Blocks[(level.mapwidth - 6), 13] = new Block(materials[0]);
+            level.Blocks[(level.mapwidth - 6), 12] = new Block(materials[1]);
+            for (int x = (level.mapwidth - 5); x < level.mapwidth; x++)
+            {
+                level.Blocks[x, 11] = new Block(materials[1]);
+
+                for (int y = 12; y < 14; y++)
+                {
+                    level.Blocks[x, y] = new Block(materials[0]);
+                }
             }
             for (int x = 0; x < level.mapwidth; x++)
             {
