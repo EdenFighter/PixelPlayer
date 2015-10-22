@@ -18,6 +18,10 @@ namespace PixelPlayer
         static int blocksize = 20;
         Vector2 gamefielPosition;
         Texture2D[] playerTextures = new Texture2D[4];
+        Texture2D bombTexture;
+
+        Boolean buttonRightBackPressed = false;
+        Item[] allItems = new Item[0];
 
         Player player;
 
@@ -101,6 +105,8 @@ namespace PixelPlayer
             materials[1] = new Material(Content.Load<Texture2D>("Textures/dirt_grass"));
             materials[2] = new Material(Content.Load<Texture2D>("Textures/grass"));
 
+            bombTexture = Content.Load<Texture2D>("Textures/ore_ruby");
+
             playerTextures[0] = Content.Load<Texture2D>("Textures/male_head");
             playerTextures[1] = Content.Load<Texture2D>("Textures/male_body");
             playerTextures[2] = Content.Load<Texture2D>("Textures/male_arm");
@@ -127,13 +133,36 @@ namespace PixelPlayer
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+            GamePadState state = GamePad.GetState(PlayerIndex.One);
+
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            GamePadState state = GamePad.GetState(PlayerIndex.One);
+            if(state.Buttons.A == ButtonState.Pressed && !buttonRightBackPressed)
+            {
+                Item[] temp = new Item[allItems.Length + 1];
+                for(int i = 0; i < allItems.Length; i++)
+                {
+                    temp[i] = allItems[i];
+                }
+                temp[allItems.Length] = new Item(new Vector2(player.position.X + (player.size.X/2), player.position.Y + (player.size.Y / 3)), new Vector2(20,20), bombTexture);
+                allItems = temp;
+
+                buttonRightBackPressed = true;
+            }
+            if(state.Buttons.A == ButtonState.Released) buttonRightBackPressed = false;
+
+
 
             //Enviroment
             player.velocity += new Vector2(0, 20f);
+            for (int i = 0; i < allItems.Length; i++)
+            {
+                allItems[i].velocity += new Vector2(0, 20f);
+                if (allItems[i].velocity.X > 1) allItems[i].velocity += new Vector2(-1, 0);
+                else if (allItems[i].velocity.X < -1) allItems[i].velocity += new Vector2(1, 0);
+                else allItems[i].velocity = new Vector2(0, allItems[i].velocity.Y);
+            }
 
             //Player Input
             player.movement = new Vector2(state.ThumbSticks.Left.X * player.speed * (float)gameTime.ElapsedGameTime.TotalSeconds, -(state.ThumbSticks.Left.Y * player.jumpEnergy * (float)gameTime.ElapsedGameTime.TotalSeconds));
@@ -179,8 +208,13 @@ namespace PixelPlayer
                 }
             }
 
-            //Move Player
+            //Movement
             player.position += velocity;
+
+            for (int i = 0; i < allItems.Length; i++)
+            {
+                allItems[i].position += allItems[i].velocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
 
             base.Update(gameTime);
         }
@@ -208,6 +242,11 @@ namespace PixelPlayer
             }
 
             player.Draw(spriteBatch, gamefielPosition);
+
+            for (int i = 0; i < allItems.Length; i++)
+            {
+                spriteBatch.Draw(allItems[i].texture, new Rectangle((int)(allItems[i].position.X + gamefielPosition.X), (int)(allItems[i].position.Y + gamefielPosition.Y), (int)allItems[i].size.X, (int)allItems[i].size.Y), Color.White);
+            }
 
             spriteBatch.End();
 

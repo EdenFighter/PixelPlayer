@@ -38,6 +38,7 @@
     <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Item.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Level.cs" />
     <Compile Include="PixelPlayerGame.cs" />
@@ -59,6 +60,7 @@
     <Content Include="Content\Textures\male_body.png" />
     <Content Include="Content\Textures\male_head.png" />
     <Content Include="Content\Textures\male_leg.png" />
+    <Content Include="Content\Textures\ore_ruby.png" />
     <Content Include="Icon.ico" />
   </ItemGroup>
   <ItemGroup>
