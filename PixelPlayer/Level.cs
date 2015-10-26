@@ -29,19 +29,53 @@ namespace PixelPlayer
                 }
             }
         }
+
+        public void Update(GameTime gameTime)
+        {
+            for (int x = 0; x < worldsize.X; x++)
+            {
+                for (int y = 0; y < worldsize.Y; y++)
+                {
+                    if (allChunks[x, y].isActive) allChunks[x, y].Update(gameTime);
+                }
+            }
+        }
+
+        public void Draw (SpriteBatch spriteBatch, Vector2 cameraPosition, Vector2 resolution)
+        {
+            //For all Chunks
+            for (int x = 0; x < worldsize.X; x++)
+            {
+                for (int y = 0; y < worldsize.Y; y++)
+                {
+                    allChunks[x, y].Draw(spriteBatch, cameraPosition + (new Vector2(World.chunkSizeX * World.blockSize * x, World.chunkSizeY * World.blockSize * y)), resolution);
+                }
+            }
+        }
     }
 
     class Chunk
     {
         public Boolean isActive { get; set; }
         public Block[,] Blocks { get; set; }
+        public List<GameItem> items;
 
         public Chunk()
         {
             Blocks = new Block[World.chunkSizeX, World.chunkSizeY];
+            items = new List<GameItem>();
+            isActive = true;
         }
 
-        public void Draw(SpriteBatch SpriteBatch, Vector2 cameraPosition)
+        public void Update(GameTime gameTime)
+        {
+            foreach (GameItem item in items)
+            {
+                item.Update(gameTime);
+            }
+        }
+
+        public void Draw(SpriteBatch SpriteBatch, Vector2 cameraPosition, Vector2 resolution)
         {
             for (int x = 0; x < World.chunkSizeX; x++)
             {
@@ -49,11 +83,26 @@ namespace PixelPlayer
                 {
                     if (Blocks[x, y] != null)
                     {
-                        SpriteBatch.Draw(Blocks[x, y].material.texture, new Rectangle((x * World.blockSize) + (int)cameraPosition.X, (y * World.blockSize) + (int)cameraPosition.Y, World.blockSize, World.blockSize), new Rectangle((World.blockSize * x) % 128, (World.blockSize * y) % 128, World.blockSize, World.blockSize), Color.White);
+                        int posX = (x * World.blockSize) + (int)cameraPosition.X;
+                        int posY = (y * World.blockSize) + (int)cameraPosition.Y;
+                        //If Block is insight of the screen
+                        if ((posX + World.blockSize > 0) && posX < (int)resolution.X && (posY + World.blockSize) > 0 && posY < (int)resolution.Y)
+                        {
+                            SpriteBatch.Draw(Blocks[x, y].material.texture, new Rectangle(posX, posY, World.blockSize, World.blockSize), new Rectangle((World.blockSize * x) % 128, (World.blockSize * y) % 128, World.blockSize, World.blockSize), Color.White);
+                        }
                     }
                 }
             }
-            
+            foreach (GameItem item in items)
+            {
+                //If Item is insight of the screen
+                int posX = (int)(item.position.X + cameraPosition.X);
+                int posY = (int)(item.position.Y + cameraPosition.Y);
+                if ((posX + item.size.X) > 0 && posX < (int)resolution.X && (posY + item.size.Y) > 0 && posY < (int)resolution.Y)
+                {
+                    item.Draw(SpriteBatch, cameraPosition);
+                }
+            }
         }
     }
 

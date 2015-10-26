@@ -12,6 +12,7 @@ namespace PixelPlayer
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
+        Vector2 windowResolution;
 
         Material[] materials = new Material[5];
         World world;
@@ -27,8 +28,9 @@ namespace PixelPlayer
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
 
-            graphics.PreferredBackBufferWidth = 1280;
-            graphics.PreferredBackBufferHeight = 720;
+            windowResolution = new Vector2(1280,720);
+            graphics.PreferredBackBufferWidth = (int)windowResolution.X;
+            graphics.PreferredBackBufferHeight = (int)windowResolution.Y;
         }
 
         /// <summary>
@@ -130,6 +132,7 @@ namespace PixelPlayer
             }
 
             //Enviroment
+            world.Update(gameTime);
 
             //Camera Movement
             cameraPosition = -(new Vector2(player.position.X - (graphics.PreferredBackBufferWidth / 2) + (player.size.X / 2), player.position.Y - (graphics.PreferredBackBufferHeight / 2) + (player.size.Y / 2)));
@@ -152,17 +155,12 @@ namespace PixelPlayer
 
             spriteBatch.Begin();
 
-            for (int x = 0; x < world.worldsize.X; x++)
-            {
-                for (int y = 0; y < world.worldsize.Y; y++)
-                {
-                    world.allChunks[x, y].Draw(spriteBatch, cameraPosition + (new Vector2(World.chunkSizeX * World.blockSize * x, World.chunkSizeY * World.blockSize * y)));
-                }
-            }
+            world.Draw(spriteBatch, cameraPosition, windowResolution);
+
             for (int y = 0; y < world.worldsize.Y; y++)
             {
-                world.allChunks[(int)world.worldsize.X - 1, y].Draw(spriteBatch, cameraPosition + (new Vector2(World.chunkSizeX * World.blockSize * -1, World.chunkSizeY * World.blockSize * y)));
-                world.allChunks[0, y].Draw(spriteBatch, cameraPosition + (new Vector2(World.chunkSizeX * World.blockSize * (int)world.worldsize.X, World.chunkSizeY * World.blockSize * y)));
+                world.allChunks[(int)world.worldsize.X - 1, y].Draw(spriteBatch, cameraPosition + (new Vector2(World.chunkSizeX * World.blockSize * -1, World.chunkSizeY * World.blockSize * y)), windowResolution);
+                world.allChunks[0, y].Draw(spriteBatch, cameraPosition + (new Vector2(World.chunkSizeX * World.blockSize * (int)world.worldsize.X, World.chunkSizeY * World.blockSize * y)), windowResolution);
             }
 
             player.Draw(spriteBatch, cameraPosition);
