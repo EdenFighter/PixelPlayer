@@ -14,18 +14,13 @@ namespace PixelPlayer
         SpriteBatch spriteBatch;
 
         Material[] materials = new Material[5];
-        Level level;
-        static int blocksize = 20;
-        Vector2 gamefielPosition;
+        World world;
+        Vector2 cameraPosition;
+        GameItem bomb;
         Texture2D[] playerTextures = new Texture2D[4];
         Texture2D bombTexture;
 
-        Boolean buttonRightBackPressed = false;
-        Item[] allItems = new Item[0];
-
-        Player player;
-
-        float gameSpeed = 200f;
+        GamePlayer player;
 
         public PixelPlayerGame()
         {
@@ -44,50 +39,39 @@ namespace PixelPlayer
         /// </summary>
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-
             base.Initialize();
 
-            gamefielPosition = new Vector2(0, 0);
+            world = new World(new Vector2(5, 3));
+            player = new GamePlayer(new Vector2(0, 0), new Vector2(36, 96), world);
 
-            level = new Level();
-            for (int x = 0; x < level.mapwidth / 2; x++)
+            cameraPosition = new Vector2(0, 0);
+
+            for (int x = 0; x < (World.chunkSizeX / 2); x++)
             {
-                level.Blocks[x, 5] = new Block(materials[1]);
-
-                for (int y = 6; y < 8; y++)
+                for (int y = 0; y < World.chunkSizeY; y++)
                 {
-                    level.Blocks[x, y] = new Block(materials[0]);
+                    if (y > ((World.chunkSizeY / 2) - (x / 4)))
+                    {
+                        world.allChunks[0, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(0, 0));
+                        world.allChunks[1, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(1, 0));
+                        world.allChunks[2, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(2, 0));
+                        world.allChunks[3, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(3, 0));
+                        world.allChunks[4, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(4, 0));
+                    }
                 }
             }
-
-            for (int x = 5; x < level.mapwidth - 6; x++)
+            for (int x = (World.chunkSizeX / 2); x < World.chunkSizeX; x++)
             {
-                level.Blocks[x, 13] = new Block(materials[1]);
-            }
-            level.Blocks[(level.mapwidth - 6), 13] = new Block(materials[0]);
-            level.Blocks[(level.mapwidth - 6), 12] = new Block(materials[1]);
-            for (int x = (level.mapwidth - 5); x < level.mapwidth; x++)
-            {
-                level.Blocks[x, 11] = new Block(materials[1]);
-
-                for (int y = 12; y < 14; y++)
+                for (int y = 0; y < World.chunkSizeY; y++)
                 {
-                    level.Blocks[x, y] = new Block(materials[0]);
-                }
-            }
-            for (int x = 0; x < level.mapwidth; x++)
-            {
-                for (int y = 14; y < level.mapheight; y++)
-                {
-                    level.Blocks[x, y] = new Block(materials[0]);
-                }
-            }
-            for (int x = 0; x < 5; x++)
-            {
-                for (int y = 8; y < 14; y++)
-                {
-                    level.Blocks[x, y] = new Block(materials[0]);
+                    if (y > ((World.chunkSizeY / 2) - ((World.chunkSizeX - x) / 4)))
+                    {
+                        world.allChunks[0, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(0, 0));
+                        world.allChunks[1, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(1, 0));
+                        world.allChunks[2, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(2, 0));
+                        world.allChunks[3, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(3, 0));
+                        world.allChunks[4, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(4, 0));
+                    }
                 }
             }
         }
@@ -102,19 +86,10 @@ namespace PixelPlayer
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             materials[0] = new Material(Content.Load<Texture2D>("Textures/dirt"));
-            materials[1] = new Material(Content.Load<Texture2D>("Textures/dirt_grass"));
-            materials[2] = new Material(Content.Load<Texture2D>("Textures/grass"));
 
-            bombTexture = Content.Load<Texture2D>("Textures/ore_ruby");
+            bombTexture = Content.Load<Texture2D>("Textures/bomb");
 
-            playerTextures[0] = Content.Load<Texture2D>("Textures/male_head");
-            playerTextures[1] = Content.Load<Texture2D>("Textures/male_body");
-            playerTextures[2] = Content.Load<Texture2D>("Textures/male_arm");
-            playerTextures[3] = Content.Load<Texture2D>("Textures/male_leg");
-
-            player = new Player(new Vector2(0, 0), new Vector2(36, 96), playerTextures[0], playerTextures[1], playerTextures[2], playerTextures[3]);
-
-            // TODO: use this.Content to load your game content here
+            GamePlayer.LoadContent(Content);
         }
 
         /// <summary>
@@ -138,83 +113,31 @@ namespace PixelPlayer
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            if(state.Buttons.A == ButtonState.Pressed && !buttonRightBackPressed)
+            if (GamePad.GetState(PlayerIndex.One).Buttons.B == ButtonState.Pressed)
             {
-                Item[] temp = new Item[allItems.Length + 1];
-                for(int i = 0; i < allItems.Length; i++)
+                for (int x = 0; x < 64; x++)
                 {
-                    temp[i] = allItems[i];
-                }
-                temp[allItems.Length] = new Item(new Vector2(player.position.X + (player.size.X/2), player.position.Y + (player.size.Y / 3)), new Vector2(20,20), bombTexture);
-                allItems = temp;
-
-                buttonRightBackPressed = true;
-            }
-            if(state.Buttons.A == ButtonState.Released) buttonRightBackPressed = false;
-
-
-
-            //Enviroment
-            player.velocity += new Vector2(0, 20f);
-            for (int i = 0; i < allItems.Length; i++)
-            {
-                allItems[i].velocity += new Vector2(0, 20f);
-                if (allItems[i].velocity.X > 1) allItems[i].velocity += new Vector2(-1, 0);
-                else if (allItems[i].velocity.X < -1) allItems[i].velocity += new Vector2(1, 0);
-                else allItems[i].velocity = new Vector2(0, allItems[i].velocity.Y);
-            }
-
-            //Player Input
-            player.movement = new Vector2(state.ThumbSticks.Left.X * player.speed * (float)gameTime.ElapsedGameTime.TotalSeconds, -(state.ThumbSticks.Left.Y * player.jumpEnergy * (float)gameTime.ElapsedGameTime.TotalSeconds));
-
-            gamefielPosition -= new Vector2(state.ThumbSticks.Right.X * gameSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds, -(state.ThumbSticks.Right.Y * gameSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds));
-
-            //gamefielPosition += (10 * playerVelocity * (float)gameTime.ElapsedGameTime.TotalSeconds);
-
-            //Collision
-            Vector2 velocity = ((player.velocity + (gameSpeed * player.movement)) * (float)gameTime.ElapsedGameTime.TotalSeconds);
-
-            Rectangle playerBoxLeft = new Rectangle((int)(player.position.X - (velocity.X - 1f)), (int)player.position.Y + 2, 1, (int)player.size.Y - 4);
-            Rectangle playerBoxRight = new Rectangle((int)(player.position.X + (velocity.X - 1f) + player.size.X), (int)player.position.Y + 2, 1, (int)player.size.Y - 4);
-            Rectangle playerBoxTop = new Rectangle((int)player.position.X + 2, (int)(player.position.Y - (velocity.Y - 1f)), (int)player.size.X - 4, 1);
-            Rectangle playerBoxBottom = new Rectangle((int)player.position.X + 2, (int)(player.position.Y + (velocity.Y - 1f) + player.size.Y), (int)player.size.X - 4, 1);
-
-            for (int x = 0; x < level.mapwidth; x++)
-            {
-                for (int y = 0; y < level.mapheight; y++)
-                {
-                    Block block = level.Blocks[x, y];
-                    if (!(block == null))
+                    for (int y = 0; y < (World.chunkSizeY / 2); y++)
                     {
-                        Rectangle box = new Rectangle(x * blocksize, y * blocksize, blocksize, blocksize);
-                        if(box.Intersects(playerBoxBottom) && velocity.Y > 0)
-                        {
-                            velocity = new Vector2 (velocity.X, 0);
-                            player.velocity = new Vector2(0, 0);
-                        }
-                        if (box.Intersects(playerBoxTop) && velocity.Y < 0)
-                        {
-                            velocity = new Vector2(velocity.X, 0);
-                        }
-                        if (box.Intersects(playerBoxLeft) && velocity.X < 0)
-                        {
-                            velocity = new Vector2(0, velocity.Y);
-                        }
-                        if (box.Intersects(playerBoxRight) && velocity.X > 0)
-                        {
-                            velocity = new Vector2(0, velocity.Y);
-                        }
+                        world.allChunks[0, 0].Blocks[x, y] = null;
                     }
                 }
             }
+            if (GamePad.GetState(PlayerIndex.One).Buttons.A == ButtonState.Pressed)
+            {
+                bomb = new GameItem(new Vector2(player.position.X + (player.size.X / 2) - 20, player.position.Y + (player.size.Y / 2) - 20),new Vector2(40,40), bombTexture, world);
+                bomb.velocity = new Vector2(state.ThumbSticks.Right.X * 20 * (float)gameTime.ElapsedGameTime.TotalSeconds, -(state.ThumbSticks.Right.Y * 20 * (float)gameTime.ElapsedGameTime.TotalSeconds)) * 20;
+            }
+
+            //Enviroment
+
+            //Camera Movement
+            cameraPosition = -(new Vector2(player.position.X - (graphics.PreferredBackBufferWidth / 2) + (player.size.X / 2), player.position.Y - (graphics.PreferredBackBufferHeight / 2) + (player.size.Y / 2)));
 
             //Movement
-            player.position += velocity;
+            player.Update(gameTime);
 
-            for (int i = 0; i < allItems.Length; i++)
-            {
-                allItems[i].position += allItems[i].velocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
-            }
+            if (bomb != null) bomb.Update(gameTime);
 
             base.Update(gameTime);
         }
@@ -229,24 +152,21 @@ namespace PixelPlayer
 
             spriteBatch.Begin();
 
-            for (int x = 0; x < level.mapwidth; x++)
+            for (int x = 0; x < world.worldsize.X; x++)
             {
-                for (int y = 0; y < level.mapheight; y++)
+                for (int y = 0; y < world.worldsize.Y; y++)
                 {
-                    Block block = level.Blocks[x, y];
-                    if (!(block == null))
-                    {
-                        spriteBatch.Draw(block.material.texture, new Rectangle((int)(gamefielPosition.X + (x * 20)), (int)(gamefielPosition.Y + (y * 20)), blocksize, blocksize), Color.White);
-                    }
+                    world.allChunks[x, y].Draw(spriteBatch, cameraPosition + (new Vector2(World.chunkSizeX * World.blockSize * x, World.chunkSizeY * World.blockSize * y)));
                 }
             }
-
-            player.Draw(spriteBatch, gamefielPosition);
-
-            for (int i = 0; i < allItems.Length; i++)
+            for (int y = 0; y < world.worldsize.Y; y++)
             {
-                spriteBatch.Draw(allItems[i].texture, new Rectangle((int)(allItems[i].position.X + gamefielPosition.X), (int)(allItems[i].position.Y + gamefielPosition.Y), (int)allItems[i].size.X, (int)allItems[i].size.Y), Color.White);
+                world.allChunks[(int)world.worldsize.X - 1, y].Draw(spriteBatch, cameraPosition + (new Vector2(World.chunkSizeX * World.blockSize * -1, World.chunkSizeY * World.blockSize * y)));
+                world.allChunks[0, y].Draw(spriteBatch, cameraPosition + (new Vector2(World.chunkSizeX * World.blockSize * (int)world.worldsize.X, World.chunkSizeY * World.blockSize * y)));
             }
+
+            player.Draw(spriteBatch, cameraPosition);
+            if(bomb != null) bomb.Draw(spriteBatch, cameraPosition);
 
             spriteBatch.End();
 

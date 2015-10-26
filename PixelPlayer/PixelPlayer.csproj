@@ -38,8 +38,7 @@
     <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Item.cs" />
-    <Compile Include="Player.cs" />
+    <Compile Include="GameObject.cs" />
     <Compile Include="Level.cs" />
     <Compile Include="PixelPlayerGame.cs" />
     <Compile Include="Program.cs" />
@@ -53,9 +52,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Content\Textures\bomb.png" />
     <Content Include="Content\Textures\dirt.png" />
-    <Content Include="Content\Textures\dirt_grass.png" />
-    <Content Include="Content\Textures\grass.png" />
     <Content Include="Content\Textures\male_arm.png" />
     <Content Include="Content\Textures\male_body.png" />
     <Content Include="Content\Textures\male_head.png" />
