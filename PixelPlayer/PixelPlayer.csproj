@@ -54,11 +54,20 @@
   <ItemGroup>
     <Content Include="Content\Textures\bomb.png" />
     <Content Include="Content\Textures\dirt.png" />
+    <Content Include="Content\Textures\ice.png" />
+    <Content Include="Content\Textures\lava.png" />
     <Content Include="Content\Textures\male_arm.png" />
     <Content Include="Content\Textures\male_body.png" />
     <Content Include="Content\Textures\male_head.png" />
     <Content Include="Content\Textures\male_leg.png" />
     <Content Include="Content\Textures\ore_ruby.png" />
+    <Content Include="Content\Textures\redsand.png" />
+    <Content Include="Content\Textures\snow.png" />
+    <Content Include="Content\Textures\square_blue.png" />
+    <Content Include="Content\Textures\square_orange.png" />
+    <Content Include="Content\Textures\square_white.png" />
+    <Content Include="Content\Textures\stone.png" />
+    <Content Include="Content\Textures\water.png" />
     <Content Include="Icon.ico" />
   </ItemGroup>
   <ItemGroup>

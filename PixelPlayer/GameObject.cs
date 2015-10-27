@@ -189,6 +189,13 @@ namespace PixelPlayer
 
             Vector2 movement = new Vector2(state.ThumbSticks.Left.X * speed * (float)gameTime.ElapsedGameTime.TotalSeconds, -(state.ThumbSticks.Left.Y * jumpEnergy * (float)gameTime.ElapsedGameTime.TotalSeconds)) * 20;
 
+            if (!state.IsConnected)
+            {
+                if (Keyboard.GetState().IsKeyDown(Keys.A)) movement += new Vector2(-0.5f * speed, 0);
+                if (Keyboard.GetState().IsKeyDown(Keys.D)) movement += new Vector2(0.5f * speed, 0);
+                if (Keyboard.GetState().IsKeyDown(Keys.W)) movement += new Vector2(0, -0.5f * jumpEnergy);
+            }
+
             velocity += (new Vector2(0, World.gravity)) * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             this.boundingBox.position = position + new Vector2(velocity.X, 0) + new Vector2(movement.X, 0);

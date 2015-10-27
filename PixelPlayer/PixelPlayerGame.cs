@@ -54,11 +54,22 @@ namespace PixelPlayer
                 {
                     if (y > ((World.chunkSizeY / 2) - (x / 4)))
                     {
-                        world.allChunks[0, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(0, 0));
-                        world.allChunks[1, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(1, 0));
-                        world.allChunks[2, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(2, 0));
-                        world.allChunks[3, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(3, 0));
-                        world.allChunks[4, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(4, 0));
+                        if (y < (World.chunkSizeY / 4) * 3)
+                        {
+                            world.allChunks[0, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(0, 0));
+                            world.allChunks[1, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(1, 0));
+                            world.allChunks[2, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(2, 0));
+                            world.allChunks[3, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(3, 0));
+                            world.allChunks[4, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(4, 0));
+                        }
+                        else
+                        {
+                            world.allChunks[0, 0].Blocks[x, y] = new Block(materials[1], new Vector2(x, y), new Vector2(0, 0));
+                            world.allChunks[1, 0].Blocks[x, y] = new Block(materials[1], new Vector2(x, y), new Vector2(1, 0));
+                            world.allChunks[2, 0].Blocks[x, y] = new Block(materials[1], new Vector2(x, y), new Vector2(2, 0));
+                            world.allChunks[3, 0].Blocks[x, y] = new Block(materials[1], new Vector2(x, y), new Vector2(3, 0));
+                            world.allChunks[4, 0].Blocks[x, y] = new Block(materials[1], new Vector2(x, y), new Vector2(4, 0));
+                        }
                     }
                 }
             }
@@ -68,11 +79,22 @@ namespace PixelPlayer
                 {
                     if (y > ((World.chunkSizeY / 2) - ((World.chunkSizeX - x) / 4)))
                     {
-                        world.allChunks[0, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(0, 0));
-                        world.allChunks[1, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(1, 0));
-                        world.allChunks[2, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(2, 0));
-                        world.allChunks[3, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(3, 0));
-                        world.allChunks[4, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(4, 0));
+                        if (y < (World.chunkSizeY / 4) * 3)
+                        {
+                            world.allChunks[0, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(0, 0));
+                            world.allChunks[1, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(1, 0));
+                            world.allChunks[2, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(2, 0));
+                            world.allChunks[3, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(3, 0));
+                            world.allChunks[4, 0].Blocks[x, y] = new Block(materials[0], new Vector2(x, y), new Vector2(4, 0));
+                        }
+                        else
+                        {
+                            world.allChunks[0, 0].Blocks[x, y] = new Block(materials[1], new Vector2(x, y), new Vector2(0, 0));
+                            world.allChunks[1, 0].Blocks[x, y] = new Block(materials[1], new Vector2(x, y), new Vector2(1, 0));
+                            world.allChunks[2, 0].Blocks[x, y] = new Block(materials[1], new Vector2(x, y), new Vector2(2, 0));
+                            world.allChunks[3, 0].Blocks[x, y] = new Block(materials[1], new Vector2(x, y), new Vector2(3, 0));
+                            world.allChunks[4, 0].Blocks[x, y] = new Block(materials[1], new Vector2(x, y), new Vector2(4, 0));
+                        }
                     }
                 }
             }
@@ -88,6 +110,7 @@ namespace PixelPlayer
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             materials[0] = new Material(Content.Load<Texture2D>("Textures/dirt"));
+            materials[1] = new Material(Content.Load<Texture2D>("Textures/stone"));
 
             bombTexture = Content.Load<Texture2D>("Textures/bomb");
 
