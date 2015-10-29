@@ -160,7 +160,55 @@ namespace PixelPlayer
 
         public override void Update(GameTime gameTime)
         {
-            
+            //Vector2 boundingBoxStartPos = new Vector2(0, 0);
+            //boundingBoxStartPos += boundingBox.position;
+
+            //Do x-axis collition calculation
+            //boundingBox.position += new Vector2(velocity.X, 0);
+            Vector2 BlockPosLeftTop = position / World.blockSize;
+            Vector2 BlockPosRightTop = (position + new Vector2(boundingBox.size.X, 0)) / World.blockSize;
+            Vector2 BlockPosLeftBottom = (position + new Vector2(0, boundingBox.size.Y)) / World.blockSize;
+            Vector2 BlockPosRightBottom = (position + boundingBox.size) / World.blockSize;
+
+            BlockPosLeftTop = new Vector2(BlockPosLeftTop.X % World.chunkSizeX, BlockPosLeftTop.Y % World.chunkSizeY);
+            BlockPosRightTop = new Vector2(BlockPosRightTop.X % World.chunkSizeX, BlockPosRightTop.Y % World.chunkSizeY);
+            BlockPosLeftBottom = new Vector2(BlockPosLeftBottom.X % World.chunkSizeX, BlockPosLeftBottom.Y % World.chunkSizeY);
+            BlockPosRightBottom = new Vector2(BlockPosRightBottom.X % World.chunkSizeX, BlockPosRightBottom.Y % World.chunkSizeY);
+
+            world.allChunks[(int)(position.X / (World.chunkSizeX * World.blockSize)), (int)((position.Y + size.Y) / (World.chunkSizeY * World.blockSize))].Blocks[(int)BlockPosLeftTop.X, (int)BlockPosLeftTop.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockPosLeftTop.X, (int)BlockPosLeftTop.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
+            world.allChunks[(int)((position.X + size.X) / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))].Blocks[(int)BlockPosRightTop.X, (int)BlockPosRightTop.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockPosRightTop.X, (int)BlockPosRightTop.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
+            world.allChunks[(int)(position.X / (World.chunkSizeX * World.blockSize)), (int)((position.Y + size.Y) / (World.chunkSizeY * World.blockSize))].Blocks[(int)BlockPosLeftBottom.X, (int)BlockPosLeftBottom.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockPosLeftBottom.X, (int)BlockPosLeftBottom.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
+            world.allChunks[(int)((position.X + size.X) / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))].Blocks[(int)BlockPosRightBottom.X, (int)BlockPosRightBottom.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockPosRightBottom.X, (int)BlockPosRightBottom.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
+
+            Vector2 firstVelocity = new Vector2(0,0);
+            firstVelocity += velocity;
+
+            Vector2 BlockEndPosLeftTop = (position + velocity) / World.blockSize;
+            Vector2 BlockEndPosRightTop = (position + velocity + new Vector2(boundingBox.size.X, 0)) / World.blockSize;
+            Vector2 BlockEndPosLeftBottom = (position + velocity + new Vector2(0, boundingBox.size.Y)) / World.blockSize;
+            Vector2 BlockEndPosRightBottom = (position + velocity + boundingBox.size) / World.blockSize;
+
+            BlockEndPosLeftTop = new Vector2(BlockEndPosLeftTop.X % World.chunkSizeX, BlockEndPosLeftTop.Y % World.chunkSizeY);
+            BlockEndPosRightTop = new Vector2(BlockEndPosRightTop.X % World.chunkSizeX, BlockEndPosRightTop.Y % World.chunkSizeY);
+            BlockEndPosLeftBottom = new Vector2(BlockEndPosLeftBottom.X % World.chunkSizeX, BlockEndPosLeftBottom.Y % World.chunkSizeY);
+            BlockEndPosRightBottom = new Vector2(BlockEndPosRightBottom.X % World.chunkSizeX, BlockEndPosRightBottom.Y % World.chunkSizeY);
+
+            world.allChunks[0, 0].Blocks[(int)BlockEndPosLeftTop.X, (int)BlockEndPosLeftTop.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockEndPosLeftTop.X, (int)BlockEndPosLeftTop.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
+            world.allChunks[0, 0].Blocks[(int)BlockEndPosRightTop.X, (int)BlockEndPosRightTop.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockEndPosRightTop.X, (int)BlockEndPosRightTop.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
+            world.allChunks[0, 0].Blocks[(int)BlockEndPosLeftBottom.X, (int)BlockEndPosLeftBottom.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockEndPosLeftBottom.X, (int)BlockEndPosLeftBottom.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
+            world.allChunks[0, 0].Blocks[(int)BlockEndPosRightBottom.X, (int)BlockEndPosRightBottom.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockEndPosRightBottom.X, (int)BlockEndPosRightBottom.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
+
+            for (int y = 0; y < velocity.Y; y++)
+            {
+                for (int x = 0; x < y/2; x++)
+                {
+                    Math.Ceiling
+                }
+            }
+
+            //Do y-axis collition calculation
+            //boundingBox.position = boundingBoxStartPos;
+            //boundingBox.position += new Vector2(0, velocity.Y);
         }
         public override void Draw(SpriteBatch spriteBatch, Vector2 CameraPosition)
         {
@@ -176,8 +224,8 @@ namespace PixelPlayer
 
         public GamePlayer(Vector2 position, Vector2 size, World world) : base(position, size, world)
         {
-            speed = 10;
-            jumpEnergy = 20;
+            speed = 50;
+            jumpEnergy = 50;
             _currentChunkPosition = new Vector2((int)position.X / (World.chunkSizeX * World.blockSize),(int)position.Y / (World.chunkSizeX * World.blockSize));
 
             _boundingBox = new BoundingBox2D(this, size);
@@ -187,17 +235,19 @@ namespace PixelPlayer
         {
             GamePadState state = GamePad.GetState(PlayerIndex.One);
 
-            Vector2 movement = new Vector2(state.ThumbSticks.Left.X * speed * (float)gameTime.ElapsedGameTime.TotalSeconds, -(state.ThumbSticks.Left.Y * jumpEnergy * (float)gameTime.ElapsedGameTime.TotalSeconds)) * 20;
+            //velocity = new Vector2(state.ThumbSticks.Left.X * speed * (float)gameTime.ElapsedGameTime.TotalSeconds, -(state.ThumbSticks.Left.Y * jumpEnergy * (float)gameTime.ElapsedGameTime.TotalSeconds)) * 20;
 
-            if (!state.IsConnected)
+            velocity = new Vector2(50, 50);
+
+            /*if (!state.IsConnected)
             {
                 if (Keyboard.GetState().IsKeyDown(Keys.A)) movement += new Vector2(-0.5f * speed, 0);
                 if (Keyboard.GetState().IsKeyDown(Keys.D)) movement += new Vector2(0.5f * speed, 0);
                 if (Keyboard.GetState().IsKeyDown(Keys.W)) movement += new Vector2(0, -0.5f * jumpEnergy);
             }
-
+            
             velocity += (new Vector2(0, World.gravity)) * (float)gameTime.ElapsedGameTime.TotalSeconds;
-
+            
             this.boundingBox.position = position + new Vector2(velocity.X, 0) + new Vector2(movement.X, 0);
             //For each Block in the Chunk
             for (int x = 0; x < World.chunkSizeX; x++)
@@ -288,8 +338,8 @@ namespace PixelPlayer
                 }
             }
 
-            //Setting new Position for the Object
-            position = position + velocity + movement;
+            //Setting new Position for the Object*/
+            /*position = position + velocity + movement*/;
             position = new Vector2(position.X % (world.worldsize.X * World.chunkSizeX * World.blockSize), position.Y % (world.worldsize.Y * World.chunkSizeY * World.blockSize));
             if (position.X < 0) position = new Vector2((world.worldsize.X * World.chunkSizeX * World.blockSize) - position.X, position.Y);
             if (position.X < 0) position = new Vector2(position.X, (world.worldsize.Y * World.chunkSizeY * World.blockSize) - position.Y);

@@ -11,8 +11,9 @@ namespace PixelPlayer
     {
         public static int blockSize = 8;
         public static float gravity = 10f;
-        public static int chunkSizeX = 64;
-        public static int chunkSizeY = 64;
+        public static int chunkSize = 64;
+        public static int chunkSizeX = chunkSize;
+        public static int chunkSizeY = chunkSize;
         public Chunk[,] allChunks;
         public Vector2 worldsize { get; }
 

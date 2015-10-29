@@ -20,6 +20,7 @@ namespace PixelPlayer
         GameItem bomb;
         Texture2D[] playerTextures = new Texture2D[4];
         Texture2D bombTexture;
+        public static Texture2D testTexture;
 
         GamePlayer player;
 
@@ -44,7 +45,7 @@ namespace PixelPlayer
             base.Initialize();
 
             world = new World(new Vector2(5, 3));
-            player = new GamePlayer(new Vector2(0, 0), new Vector2(36, 96), world);
+            player = new GamePlayer(new Vector2(80, 80), new Vector2(36, 96), world);
 
             cameraPosition = new Vector2(0, 0);
 
@@ -111,6 +112,7 @@ namespace PixelPlayer
 
             materials[0] = new Material(Content.Load<Texture2D>("Textures/dirt"));
             materials[1] = new Material(Content.Load<Texture2D>("Textures/stone"));
+            testTexture = Content.Load<Texture2D>("Textures/lava");
 
             bombTexture = Content.Load<Texture2D>("Textures/bomb");
 
