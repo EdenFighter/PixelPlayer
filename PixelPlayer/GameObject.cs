@@ -23,6 +23,7 @@ namespace PixelPlayer
             this.position = position;
             this.size = size;
             this.world = world;
+            _currentChunkPosition = new Vector2((int)position.X / (World.chunkSizeX * World.blockSize), (int)position.Y / (World.chunkSizeY * World.blockSize));
         }
 
         public BoundingBox2D boundingBox
@@ -42,112 +43,169 @@ namespace PixelPlayer
     {
         public Texture2D texture { get; }
 
+        Vector2 _previousChunkPosition;
+
         public GameItem(Vector2 position, Vector2 size , Texture2D texture, World world) : base(position, size, world)
         {
             this.texture = texture;
             _boundingBox = new BoundingBox2D(this, size);
+            world.allChunks[(int)_currentChunkPosition.X, (int)_currentChunkPosition.Y].items.Add(this);
+        }
+
+        public Vector2 previousChunkPosition
+        {
+            get { return _previousChunkPosition; }
         }
 
         public override void Update(GameTime gameTime)
         {
             velocity += new Vector2(0, World.gravity) * (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (velocity.X < 0.1 && velocity.X > -0.1) { velocity = new Vector2(0, velocity.Y); }
-            else { velocity -= new Vector2(((velocity.X / 4)  * 3), 0) * (float)gameTime.ElapsedGameTime.TotalSeconds; }
+            if (velocity.X < 0.2 && velocity.X > -0.2) { velocity = new Vector2(0, velocity.Y); }
+            else { velocity -= new Vector2(((velocity.X / 100)  * 95), 0) * (float)gameTime.ElapsedGameTime.TotalSeconds; }
 
-            this.boundingBox.position = position + new Vector2(velocity.X, 0);
-            //For each Block in the Chunk
-            for (int x = 0; x < World.chunkSizeX; x++)
+            //World Collision calculation
+            bool collisionFound = false;
+            bool collisionInGreatFound = false;
+            Vector2 newVelocity = new Vector2(velocity.X, velocity.Y);
+            Vector2 endPosition;
+            do
             {
-                for (int y = 0; y < World.chunkSizeY; y++)
+                endPosition = position + newVelocity;
+                int greatPosX;
+                int greatPosY;
+                if (endPosition.X < position.X) { greatPosX = (int)endPosition.X; }
+                else { greatPosX = (int)position.X; }
+                if (endPosition.Y < position.Y) { greatPosY = (int)endPosition.Y; }
+                else { greatPosY = (int)position.Y; }
+
+                int greatHeight = (int)(Math.Abs(newVelocity.Y) + size.Y);
+                int greatWidth = (int)(Math.Abs(newVelocity.X) + size.X);
+
+                for (int x = (int)(endPosition.X / World.blockSize); x < (int)Math.Ceiling((endPosition.X + size.X) / World.blockSize); x++)
                 {
-                    //For all Chunks around the current one
-                    for (int chunkX = -1; chunkX <= 1; chunkX++)
+                    for (int y = (int)(endPosition.Y / World.blockSize); y < (int)Math.Ceiling((endPosition.Y + size.Y) / World.blockSize); y++)
                     {
-                        for (int chunkY = -1; chunkY <= 1; chunkY++)
+                        int PosX;
+                        int PosY;
+                        if (x < 0) { PosX = (int)world.worldsize.X * World.chunkSizeX - x; } else { PosX = x; }
+                        if (y < 0) { PosY = (int)world.worldsize.Y * World.chunkSizeY - y; } else { PosY = y; }
+                        int ChunkX = (x / World.chunkSizeX) % (int)world.worldsize.X;
+                        int ChunkY = (y / World.chunkSizeY) % (int)world.worldsize.Y;
+
+                        if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY] != null)
                         {
-                            //If Chunk is at the other side of the playfield
-                            int chunkposX = (int)(chunkX + _currentChunkPosition.X);
-                            int chunkposY = (int)(chunkY + _currentChunkPosition.Y);
-                            if (chunkposX < 0) chunkposX = (int)world.worldsize.X - 1;
-                            if (chunkposY < 0) chunkposY = (int)world.worldsize.Y - 1;
-                            if (chunkposX > (int)world.worldsize.X - 1) chunkposX = 0;
-                            if (chunkposY > (int)world.worldsize.Y - 1) chunkposY = 0;
-
-                            Chunk chunkToTest = world.allChunks[chunkposX, chunkposY];
-
-                            //Check collison for each Block in the chunkToTest
-                            if (chunkToTest.Blocks[x, y] != null)
+                            if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == Material.Type.solid)
                             {
-                                if (boundingBox.collides(chunkToTest.Blocks[x, y]))
+                                collisionFound = true;
+                                if (velocity.X >= 0)
                                 {
-                                    if (velocity.X / 4 < 1 && velocity.X / 4 > -1)
+                                    if ((x * World.blockSize) < endPosition.X + size.X)
                                     {
-                                        velocity = new Vector2(0, velocity.Y);
-                                        this.boundingBox.position = position;
+                                        if ((velocity.Y > 0) && ((y * World.blockSize) - size.Y >= position.Y) && ((y * World.blockSize) - size.Y < endPosition.Y))
+                                        {
+                                            endPosition.Y = (y * World.blockSize) - size.Y;
+                                            velocity = new Vector2(velocity.X, 0);
+                                        }
+                                        else if ((velocity.Y < 0) && ((y * World.blockSize) + World.blockSize <= position.Y) && ((y * World.blockSize) + World.blockSize > endPosition.Y))
+                                        {
+                                            endPosition.Y = (y * World.blockSize) + World.blockSize;
+                                            velocity = new Vector2(velocity.X, 0);
+                                        }
                                     }
-                                    else
+                                }
+                                else
+                                {
+                                    if ((x * World.blockSize) + World.blockSize > endPosition.X)
                                     {
-                                        velocity = new Vector2((velocity.X / 2), velocity.Y);
-                                        this.boundingBox.position = position + new Vector2(velocity.X, 0);
+                                        if ((velocity.Y > 0) && ((y * World.blockSize) - size.Y >= position.Y) && ((y * World.blockSize) - size.Y < endPosition.Y))
+                                        {
+                                            endPosition.Y = (y * World.blockSize) - size.Y;
+                                            velocity = new Vector2(velocity.X, 0);
+                                        }
+                                        else if ((velocity.Y < 0) && ((y * World.blockSize) + World.blockSize <= position.Y) && ((y * World.blockSize) + World.blockSize > endPosition.Y))
+                                        {
+                                            endPosition.Y = (y * World.blockSize) + World.blockSize;
+                                            velocity = new Vector2(velocity.X, 0);
+                                        }
+                                    }
+                                }
+                                if (velocity.Y >= 0)
+                                {
+                                    if ((y * World.blockSize) < endPosition.Y + size.Y)
+                                    {
+                                        if ((velocity.X > 0) && ((x * World.blockSize) - size.X >= position.X) && ((x * World.blockSize) - size.X < endPosition.X))
+                                        {
+                                            endPosition.X = (x * World.blockSize) - size.X;
+                                            velocity = new Vector2(0, velocity.Y);
+                                        }
+                                        else if ((velocity.X < 0) && ((x * World.blockSize) + World.blockSize <= position.X) && ((x * World.blockSize) + World.blockSize > endPosition.X))
+                                        {
+                                            endPosition.X = (x * World.blockSize) + World.blockSize;
+                                            velocity = new Vector2(0, velocity.Y);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if ((y * World.blockSize) + World.blockSize > endPosition.Y)
+                                    {
+                                        if ((velocity.X > 0) && ((x * World.blockSize) - size.X >= position.X) && ((x * World.blockSize) - size.X < endPosition.X))
+                                        {
+                                            endPosition.X = (x * World.blockSize) - size.X;
+                                            velocity = new Vector2(0, velocity.Y);
+                                        }
+                                        else if ((velocity.X < 0) && ((x * World.blockSize) + World.blockSize <= position.X) && ((x * World.blockSize) + World.blockSize > endPosition.X))
+                                        {
+                                            endPosition.X = (x * World.blockSize) + World.blockSize;
+                                            velocity = new Vector2(0, velocity.Y);
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
-
-            this.boundingBox.position = position + new Vector2(0, velocity.Y);
-            //For each Block in the Chunk
-            for (int x = 0; x < World.chunkSizeX; x++)
-            {
-                for (int y = 0; y < World.chunkSizeY; y++)
+                if (!collisionFound)
                 {
-                    //For all Chunks around the current one
-                    for (int chunkX = -1; chunkX <= 1; chunkX++)
+                    collisionInGreatFound = false;
+                    for (int x = (int)(greatPosX / World.blockSize); x < (int)Math.Ceiling((Double)(greatPosX + greatWidth) / World.blockSize); x++)
                     {
-                        for (int chunkY = -1; chunkY <= 1; chunkY++)
+                        for (int y = (int)(greatPosY / World.blockSize); y < (int)Math.Ceiling((Double)(greatPosY + greatHeight) / World.blockSize); y++)
                         {
-                            //If Chunk is at the other side of the playfield
-                            int chunkposX = (int)(chunkX + _currentChunkPosition.X);
-                            int chunkposY = (int)(chunkY + _currentChunkPosition.Y);
-                            if (chunkposX < 0) chunkposX = (int)world.worldsize.X - 1;
-                            if (chunkposY < 0) chunkposY = (int)world.worldsize.Y - 1;
-                            if (chunkposX > (int)world.worldsize.X - 1) chunkposX = 0;
-                            if (chunkposY > (int)world.worldsize.Y - 1) chunkposY = 0;
+                            int PosX;
+                            int PosY;
+                            if (x < 0) { PosX = (int)world.worldsize.X * World.chunkSizeX - x; } else { PosX = x; }
+                            if (y < 0) { PosY = (int)world.worldsize.Y * World.chunkSizeY - y; } else { PosY = y; }
+                            int ChunkX = (PosX / World.chunkSizeX) % (int)world.worldsize.X;
+                            int ChunkY = (PosY / World.chunkSizeY) % (int)world.worldsize.Y;
 
-                            Chunk chunkToTest = world.allChunks[chunkposX, chunkposY];
-
-                            //Check collison for each Block in the chunkToTest
-                            if (chunkToTest.Blocks[x, y] != null)
+                            if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY] != null)
                             {
-                                if (boundingBox.collides(chunkToTest.Blocks[x, y]))
+                                if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == Material.Type.solid)
                                 {
-                                    if (velocity.Y / 4 < 1 && velocity.Y / 4 > -1)
-                                    {
-                                        velocity = new Vector2(velocity.X, 0);
-                                        this.boundingBox.position = position;
-                                    }
-                                    else
-                                    {
-                                        velocity = new Vector2(velocity.X, (velocity.Y / 2));
-                                        this.boundingBox.position = position + new Vector2(0, velocity.Y);
-                                    }
+                                    collisionInGreatFound = true;
+                                    newVelocity = newVelocity / 2;
                                 }
                             }
                         }
                     }
                 }
-            }
+            } while (!collisionFound && collisionInGreatFound && (Math.Abs(newVelocity.X) > velocity.X / 8 || Math.Abs(newVelocity.Y) > velocity.Y / 8));
 
-            //Setting new Position for the Object
-            position = position + velocity;
-            position = new Vector2(position.X % (world.worldsize.X * World.chunkSizeX * World.blockSize), position.Y % (world.worldsize.Y * World.chunkSizeY * World.blockSize));
+            position = endPosition;
             if (position.X < 0) position = new Vector2((world.worldsize.X * World.chunkSizeX * World.blockSize) - position.X, position.Y);
-            if (position.X < 0) position = new Vector2(position.X, (world.worldsize.Y * World.chunkSizeY * World.blockSize) - position.Y);
-            //Calculate current Chunk
-            _currentChunkPosition = new Vector2((int)position.X / (World.chunkSizeX * World.blockSize), (int)position.Y / (World.chunkSizeX * World.blockSize));
+            else if (position.X > (world.worldsize.X * World.chunkSizeX * World.blockSize)) position = new Vector2(position.X - (world.worldsize.X * World.chunkSizeX * World.blockSize), position.Y);
+            if (position.Y < 0) position = new Vector2(position.X, (world.worldsize.Y * World.chunkSizeY * World.blockSize) - position.Y);
+            else if (position.Y > (world.worldsize.Y * World.chunkSizeY * World.blockSize)) position = new Vector2(position.X, position.Y - (world.worldsize.Y * World.chunkSizeY * World.blockSize));
+
+            _previousChunkPosition = new Vector2(_currentChunkPosition.X, _currentChunkPosition.Y);
+            _currentChunkPosition = new Vector2((int)position.X / (World.chunkSizeX * World.blockSize), (int)position.Y / (World.chunkSizeY * World.blockSize));
+            if (_previousChunkPosition.X != _currentChunkPosition.X || _previousChunkPosition.Y != _currentChunkPosition.Y)
+            {
+                world.ChunkChangingItems.Add(this);
+            }
         }
+
         public override void Draw(SpriteBatch spriteBatch, Vector2 CameraPosition)
         {
             spriteBatch.Draw(texture, new Rectangle((int)(CameraPosition.X + position.X), (int)(CameraPosition.Y + position.Y), (int)(size.X), (int)(size.Y)), Color.White);
@@ -156,60 +214,160 @@ namespace PixelPlayer
 
     class GameFigure : GameObject
     {
-        public GameFigure(Vector2 position, Vector2 size, World world) : base(position, size, world) { }
+        protected Vector2 movement;
+        protected Vector2 physicVelocity;
+        public GameFigure(Vector2 position, Vector2 size, World world) : base(position, size, world)
+        {
+            movement = new Vector2(0, 0);
+            physicVelocity = new Vector2(0, 0);
+        }
 
         public override void Update(GameTime gameTime)
         {
-            //Vector2 boundingBoxStartPos = new Vector2(0, 0);
-            //boundingBoxStartPos += boundingBox.position;
+            physicVelocity += new Vector2(0, World.gravity) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            velocity = physicVelocity + movement;
 
-            //Do x-axis collition calculation
-            //boundingBox.position += new Vector2(velocity.X, 0);
-            Vector2 BlockPosLeftTop = position / World.blockSize;
-            Vector2 BlockPosRightTop = (position + new Vector2(boundingBox.size.X, 0)) / World.blockSize;
-            Vector2 BlockPosLeftBottom = (position + new Vector2(0, boundingBox.size.Y)) / World.blockSize;
-            Vector2 BlockPosRightBottom = (position + boundingBox.size) / World.blockSize;
-
-            BlockPosLeftTop = new Vector2(BlockPosLeftTop.X % World.chunkSizeX, BlockPosLeftTop.Y % World.chunkSizeY);
-            BlockPosRightTop = new Vector2(BlockPosRightTop.X % World.chunkSizeX, BlockPosRightTop.Y % World.chunkSizeY);
-            BlockPosLeftBottom = new Vector2(BlockPosLeftBottom.X % World.chunkSizeX, BlockPosLeftBottom.Y % World.chunkSizeY);
-            BlockPosRightBottom = new Vector2(BlockPosRightBottom.X % World.chunkSizeX, BlockPosRightBottom.Y % World.chunkSizeY);
-
-            world.allChunks[(int)(position.X / (World.chunkSizeX * World.blockSize)), (int)((position.Y + size.Y) / (World.chunkSizeY * World.blockSize))].Blocks[(int)BlockPosLeftTop.X, (int)BlockPosLeftTop.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockPosLeftTop.X, (int)BlockPosLeftTop.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
-            world.allChunks[(int)((position.X + size.X) / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))].Blocks[(int)BlockPosRightTop.X, (int)BlockPosRightTop.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockPosRightTop.X, (int)BlockPosRightTop.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
-            world.allChunks[(int)(position.X / (World.chunkSizeX * World.blockSize)), (int)((position.Y + size.Y) / (World.chunkSizeY * World.blockSize))].Blocks[(int)BlockPosLeftBottom.X, (int)BlockPosLeftBottom.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockPosLeftBottom.X, (int)BlockPosLeftBottom.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
-            world.allChunks[(int)((position.X + size.X) / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))].Blocks[(int)BlockPosRightBottom.X, (int)BlockPosRightBottom.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockPosRightBottom.X, (int)BlockPosRightBottom.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
-
-            Vector2 firstVelocity = new Vector2(0,0);
-            firstVelocity += velocity;
-
-            Vector2 BlockEndPosLeftTop = (position + velocity) / World.blockSize;
-            Vector2 BlockEndPosRightTop = (position + velocity + new Vector2(boundingBox.size.X, 0)) / World.blockSize;
-            Vector2 BlockEndPosLeftBottom = (position + velocity + new Vector2(0, boundingBox.size.Y)) / World.blockSize;
-            Vector2 BlockEndPosRightBottom = (position + velocity + boundingBox.size) / World.blockSize;
-
-            BlockEndPosLeftTop = new Vector2(BlockEndPosLeftTop.X % World.chunkSizeX, BlockEndPosLeftTop.Y % World.chunkSizeY);
-            BlockEndPosRightTop = new Vector2(BlockEndPosRightTop.X % World.chunkSizeX, BlockEndPosRightTop.Y % World.chunkSizeY);
-            BlockEndPosLeftBottom = new Vector2(BlockEndPosLeftBottom.X % World.chunkSizeX, BlockEndPosLeftBottom.Y % World.chunkSizeY);
-            BlockEndPosRightBottom = new Vector2(BlockEndPosRightBottom.X % World.chunkSizeX, BlockEndPosRightBottom.Y % World.chunkSizeY);
-
-            world.allChunks[0, 0].Blocks[(int)BlockEndPosLeftTop.X, (int)BlockEndPosLeftTop.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockEndPosLeftTop.X, (int)BlockEndPosLeftTop.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
-            world.allChunks[0, 0].Blocks[(int)BlockEndPosRightTop.X, (int)BlockEndPosRightTop.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockEndPosRightTop.X, (int)BlockEndPosRightTop.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
-            world.allChunks[0, 0].Blocks[(int)BlockEndPosLeftBottom.X, (int)BlockEndPosLeftBottom.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockEndPosLeftBottom.X, (int)BlockEndPosLeftBottom.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
-            world.allChunks[0, 0].Blocks[(int)BlockEndPosRightBottom.X, (int)BlockEndPosRightBottom.Y] = new Block(new Material(PixelPlayerGame.testTexture), new Vector2((int)BlockEndPosRightBottom.X, (int)BlockEndPosRightBottom.Y), new Vector2((int)(position.X / (World.chunkSizeX * World.blockSize)), (int)(position.Y / (World.chunkSizeY * World.blockSize))));
-
-            for (int y = 0; y < velocity.Y; y++)
+            //World Collision calculation
+            bool collisionFound = false;
+            bool collisionInGreatFound = false;
+            Vector2 newVelocity = new Vector2(velocity.X, velocity.Y);
+            Vector2 endPosition;
+            do
             {
-                for (int x = 0; x < y/2; x++)
-                {
-                    Math.Ceiling
-                }
-            }
+                endPosition = position + newVelocity;
+                int greatPosX;
+                int greatPosY;
+                if (endPosition.X < position.X)    { greatPosX = (int)endPosition.X; }
+                else                                    { greatPosX = (int)position.X; }
+                if (endPosition.Y < position.Y)    { greatPosY = (int)endPosition.Y; }
+                else                                    { greatPosY = (int)position.Y; }
 
-            //Do y-axis collition calculation
-            //boundingBox.position = boundingBoxStartPos;
-            //boundingBox.position += new Vector2(0, velocity.Y);
+                int greatHeight = (int)(Math.Abs(newVelocity.Y) + size.Y);
+                int greatWidth = (int)(Math.Abs(newVelocity.X) + size.X);
+
+                for (int x = (int)(endPosition.X / World.blockSize); x < (int)Math.Ceiling((endPosition.X + size.X) / World.blockSize); x++)
+                {
+                    for (int y = (int)(endPosition.Y / World.blockSize); y < (int)Math.Ceiling((endPosition.Y + size.Y) / World.blockSize); y++)
+                    {
+                        int PosX;
+                        int PosY;
+                        if (x < 0) { PosX = (int)world.worldsize.X * World.chunkSizeX - x; } else { PosX = x; }
+                        if (y < 0) { PosY = (int)world.worldsize.Y * World.chunkSizeY - y; } else { PosY = y; }
+                        int ChunkX = (x / World.chunkSizeX) % (int)world.worldsize.X;
+                        int ChunkY = (y / World.chunkSizeY) % (int)world.worldsize.Y;
+
+                        if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY] != null)
+                        {
+                            if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == Material.Type.solid)
+                            {
+                                collisionFound = true;
+                                if (velocity.X >= 0)
+                                {
+                                    if ((x * World.blockSize) < endPosition.X + size.X)
+                                    {
+                                        if ((velocity.Y > 0) && ((y * World.blockSize) - size.Y >= position.Y) && ((y * World.blockSize) - size.Y < endPosition.Y))
+                                        {
+                                            endPosition.Y = (y * World.blockSize) - size.Y;
+                                            velocity = new Vector2(velocity.X, 0);
+                                            physicVelocity = new Vector2(0, 0);
+                                        }
+                                        else if ((velocity.Y < 0) && ((y * World.blockSize) + World.blockSize <= position.Y) && ((y * World.blockSize) + World.blockSize > endPosition.Y))
+                                        {
+                                            endPosition.Y = (y * World.blockSize) + World.blockSize;
+                                            velocity = new Vector2(velocity.X, 0);
+                                            physicVelocity = new Vector2(0, 0);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if ((x * World.blockSize) + World.blockSize > endPosition.X)
+                                    {
+                                        if ((velocity.Y > 0) && ((y * World.blockSize) - size.Y >= position.Y) && ((y * World.blockSize) - size.Y < endPosition.Y))
+                                        {
+                                            endPosition.Y = (y * World.blockSize) - size.Y;
+                                            velocity = new Vector2(velocity.X, 0);
+                                            physicVelocity = new Vector2(0, 0);
+                                        }
+                                        else if ((velocity.Y < 0) && ((y * World.blockSize) + World.blockSize <= position.Y) && ((y * World.blockSize) + World.blockSize > endPosition.Y))
+                                        {
+                                            endPosition.Y = (y * World.blockSize) + World.blockSize;
+                                            velocity = new Vector2(velocity.X, 0);
+                                            physicVelocity = new Vector2(0, 0);
+                                        }
+                                    }
+                                }
+                                if (velocity.Y >= 0)
+                                {
+                                    if ((y * World.blockSize) < endPosition.Y + size.Y)
+                                    {
+                                        if ((velocity.X > 0) && ((x * World.blockSize) - size.X >= position.X) && ((x * World.blockSize) - size.X < endPosition.X))
+                                        {
+                                            endPosition.X = (x * World.blockSize) - size.X;
+                                            velocity = new Vector2(0, velocity.Y);
+                                        }
+                                        else if ((velocity.X < 0) && ((x * World.blockSize) + World.blockSize <= position.X) && ((x * World.blockSize) + World.blockSize > endPosition.X))
+                                        {
+                                            endPosition.X = (x * World.blockSize) + World.blockSize;
+                                            velocity = new Vector2(0, velocity.Y);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if ((y * World.blockSize) + World.blockSize > endPosition.Y)
+                                    {
+                                        if ((velocity.X > 0) && ((x * World.blockSize) - size.X >= position.X) && ((x * World.blockSize) - size.X < endPosition.X))
+                                        {
+                                            endPosition.X = (x * World.blockSize) - size.X;
+                                            velocity = new Vector2(0, velocity.Y);
+                                        }
+                                        else if ((velocity.X < 0) && ((x * World.blockSize) + World.blockSize <= position.X) && ((x * World.blockSize) + World.blockSize > endPosition.X))
+                                        {
+                                            endPosition.X = (x * World.blockSize) + World.blockSize;
+                                            velocity = new Vector2(0, velocity.Y);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!collisionFound)
+                {
+                    collisionInGreatFound = false;
+                    for (int x = (int)(greatPosX / World.blockSize); x < (int)Math.Ceiling((Double)(greatPosX + greatWidth) / World.blockSize); x++)
+                    {
+                        for (int y = (int)(greatPosY / World.blockSize); y < (int)Math.Ceiling((Double)(greatPosY + greatHeight) / World.blockSize); y++)
+                        {
+                            int PosX;
+                            int PosY;
+                            if (x < 0) { PosX = (int)world.worldsize.X * World.chunkSizeX - x; } else { PosX = x; }
+                            if (y < 0) { PosY = (int)world.worldsize.Y * World.chunkSizeY - y; } else { PosY = y; }
+                            int ChunkX = (PosX / World.chunkSizeX) % (int)world.worldsize.X;
+                            int ChunkY = (PosY / World.chunkSizeY) % (int)world.worldsize.Y;
+
+                            if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY] != null)
+                            {
+                                if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == Material.Type.solid)
+                                {
+                                    collisionInGreatFound = true;
+                                    newVelocity = newVelocity / 2;
+                                }
+                            }
+                        }
+                    }
+                }
+            } while (!collisionFound && collisionInGreatFound && (Math.Abs(newVelocity.X) > velocity.X / 8 || Math.Abs(newVelocity.Y) > velocity.Y / 8));
+
+            position = endPosition;
+            if (position.X < 0) position = new Vector2((world.worldsize.X * World.chunkSizeX * World.blockSize) - position.X, position.Y);
+            else if(position.X > (world.worldsize.X * World.chunkSizeX * World.blockSize)) position = new Vector2(position.X - (world.worldsize.X * World.chunkSizeX * World.blockSize), position.Y);
+            if (position.Y < 0) position = new Vector2(position.X, (world.worldsize.Y * World.chunkSizeY * World.blockSize) - position.Y);
+            else if (position.Y > (world.worldsize.Y * World.chunkSizeY * World.blockSize)) position = new Vector2(position.X, position.Y - (world.worldsize.Y * World.chunkSizeY * World.blockSize));
+            _currentChunkPosition = new Vector2((int)position.X / (World.chunkSizeX * World.blockSize), (int)position.Y / (World.chunkSizeX * World.blockSize));
         }
+
         public override void Draw(SpriteBatch spriteBatch, Vector2 CameraPosition)
         {
 
@@ -224,8 +382,8 @@ namespace PixelPlayer
 
         public GamePlayer(Vector2 position, Vector2 size, World world) : base(position, size, world)
         {
-            speed = 50;
-            jumpEnergy = 50;
+            speed = 10;
+            jumpEnergy = 30;
             _currentChunkPosition = new Vector2((int)position.X / (World.chunkSizeX * World.blockSize),(int)position.Y / (World.chunkSizeX * World.blockSize));
 
             _boundingBox = new BoundingBox2D(this, size);
@@ -235,119 +393,12 @@ namespace PixelPlayer
         {
             GamePadState state = GamePad.GetState(PlayerIndex.One);
 
-            //velocity = new Vector2(state.ThumbSticks.Left.X * speed * (float)gameTime.ElapsedGameTime.TotalSeconds, -(state.ThumbSticks.Left.Y * jumpEnergy * (float)gameTime.ElapsedGameTime.TotalSeconds)) * 20;
+            movement = new Vector2(state.ThumbSticks.Left.X * speed * (float)gameTime.ElapsedGameTime.TotalSeconds, -(state.ThumbSticks.Left.Y * jumpEnergy * (float)gameTime.ElapsedGameTime.TotalSeconds)) * 20;
 
-            velocity = new Vector2(50, 50);
-
-            /*if (!state.IsConnected)
-            {
-                if (Keyboard.GetState().IsKeyDown(Keys.A)) movement += new Vector2(-0.5f * speed, 0);
-                if (Keyboard.GetState().IsKeyDown(Keys.D)) movement += new Vector2(0.5f * speed, 0);
-                if (Keyboard.GetState().IsKeyDown(Keys.W)) movement += new Vector2(0, -0.5f * jumpEnergy);
-            }
-            
-            velocity += (new Vector2(0, World.gravity)) * (float)gameTime.ElapsedGameTime.TotalSeconds;
-            
-            this.boundingBox.position = position + new Vector2(velocity.X, 0) + new Vector2(movement.X, 0);
-            //For each Block in the Chunk
-            for (int x = 0; x < World.chunkSizeX; x++)
-            {
-                for (int y = 0; y < World.chunkSizeY; y++)
-                {
-                    //For all Chunks around the current one
-                    for (int chunkX = -1; chunkX <= 1; chunkX++)
-                    {
-                        for (int chunkY = -1; chunkY <= 1; chunkY++)
-                        {
-                            //If Chunk is at the other side of the playfield
-                            int chunkposX = (int)(chunkX + _currentChunkPosition.X);
-                            int chunkposY = (int)(chunkY + _currentChunkPosition.Y);
-                            if (chunkposX < 0) chunkposX = (int)world.worldsize.X - 1;
-                            if (chunkposY < 0) chunkposY = (int)world.worldsize.Y - 1;
-                            if (chunkposX > (int)world.worldsize.X - 1) chunkposX = 0;
-                            if (chunkposY > (int)world.worldsize.Y - 1) chunkposY = 0;
-
-                            Chunk chunkToTest = world.allChunks[chunkposX, chunkposY];
-
-                            //Check collison for each Block in the chunkToTest
-                            if (chunkToTest.Blocks[x, y] != null)
-                            {
-                                if (boundingBox.collides(chunkToTest.Blocks[x, y]))
-                                {
-                                    if (velocity.X / 4 < 1 && velocity.X / 4 > -1)
-                                    {
-                                        velocity = new Vector2(0, velocity.Y);
-                                        movement = new Vector2(0, movement.Y);
-                                        this.boundingBox.position = position;
-                                    }
-                                    else
-                                    {
-                                        velocity = new Vector2((velocity.X / 2), velocity.Y);
-                                        movement = new Vector2((movement.X / 2), movement.Y);
-                                        this.boundingBox.position = position + new Vector2(velocity.X, 0) + new Vector2(movement.X, 0);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            this.boundingBox.position = position + new Vector2(0, velocity.Y) + new Vector2(0, movement.Y);
-            //For each Block in the Chunk
-            for (int x = 0; x < World.chunkSizeX; x++)
-            {
-                for (int y = 0; y < World.chunkSizeY; y++)
-                {
-                    //For all Chunks around the current one
-                    for (int chunkX = -1; chunkX <= 1; chunkX++)
-                    {
-                        for (int chunkY = -1; chunkY <= 1; chunkY++)
-                        {
-                            //If Chunk is at the other side of the playfield
-                            int chunkposX = (int)(chunkX + _currentChunkPosition.X);
-                            int chunkposY = (int)(chunkY + _currentChunkPosition.Y);
-                            if (chunkposX < 0) chunkposX = (int)world.worldsize.X - 1;
-                            if (chunkposY < 0) chunkposY = (int)world.worldsize.Y - 1;
-                            if (chunkposX > (int)world.worldsize.X - 1) chunkposX = 0;
-                            if (chunkposY > (int)world.worldsize.Y - 1) chunkposY = 0;
-
-                            Chunk chunkToTest = world.allChunks[chunkposX, chunkposY];
-
-                            //Check collison for each Block in the chunkToTest
-                            if (chunkToTest.Blocks[x, y] != null)
-                            {
-                                if (boundingBox.collides(chunkToTest.Blocks[x, y]))
-                                {
-                                    if (velocity.Y / 4 < 1 && velocity.Y / 4 > -1)
-                                    {
-                                        velocity = new Vector2(velocity.X, 0);
-                                        movement = new Vector2(movement.X, 0);
-                                        this.boundingBox.position = position;
-                                    }
-                                    else
-                                    {
-                                        velocity = new Vector2(velocity.X, (velocity.Y / 2));
-                                        movement = new Vector2(movement.X, (movement.Y / 2));
-                                        this.boundingBox.position = position + new Vector2(0, velocity.Y) + new Vector2(0, movement.Y);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            //Setting new Position for the Object*/
-            /*position = position + velocity + movement*/;
-            position = new Vector2(position.X % (world.worldsize.X * World.chunkSizeX * World.blockSize), position.Y % (world.worldsize.Y * World.chunkSizeY * World.blockSize));
-            if (position.X < 0) position = new Vector2((world.worldsize.X * World.chunkSizeX * World.blockSize) - position.X, position.Y);
-            if (position.X < 0) position = new Vector2(position.X, (world.worldsize.Y * World.chunkSizeY * World.blockSize) - position.Y);
+            base.Update(gameTime);
 
             //Calculate current Chunk
             _currentChunkPosition = new Vector2((int)position.X / (World.chunkSizeX * World.blockSize), (int)position.Y / (World.chunkSizeX * World.blockSize));
-
-            base.Update(gameTime);
         }
         public override void Draw(SpriteBatch spriteBatch, Vector2 CameraPosition)
         {
@@ -390,11 +441,6 @@ namespace PixelPlayer
         public Boolean collides(GameObject gameObject)
         {
             return collides(gameObject.boundingBox);
-        }
-
-        public Boolean collides(Block block)
-        {
-            return collides(block.boundingBox);
         }
     }
 }

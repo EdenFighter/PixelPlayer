@@ -16,11 +16,13 @@ namespace PixelPlayer
         public static int chunkSizeY = chunkSize;
         public Chunk[,] allChunks;
         public Vector2 worldsize { get; }
+        public List<GameItem> ChunkChangingItems;
 
         public World(Vector2 worldsize)
         {
             this.worldsize = worldsize;
             allChunks = new Chunk[(int)worldsize.X, (int)worldsize.Y];
+            ChunkChangingItems = new List<GameItem>();
 
             for (int x = 0; x < worldsize.X; x++)
             {
@@ -40,16 +42,27 @@ namespace PixelPlayer
                     if (allChunks[x, y].isActive) allChunks[x, y].Update(gameTime);
                 }
             }
+
+            foreach (GameItem item in ChunkChangingItems)
+            {
+                allChunks[(int)item.currentChunkPosition.X, (int)item.currentChunkPosition.Y].items.Add(item);
+                allChunks[(int)item.previousChunkPosition.X, (int)item.previousChunkPosition.Y].items.Remove(item);
+            }
+            ChunkChangingItems.Clear();
         }
 
-        public void Draw (SpriteBatch spriteBatch, Vector2 cameraPosition, Vector2 resolution)
+        public void Draw(SpriteBatch spriteBatch, Vector2 cameraPosition, Vector2 resolution)
         {
             //For all Chunks
             for (int x = 0; x < worldsize.X; x++)
             {
                 for (int y = 0; y < worldsize.Y; y++)
                 {
-                    allChunks[x, y].Draw(spriteBatch, cameraPosition + (new Vector2(World.chunkSizeX * World.blockSize * x, World.chunkSizeY * World.blockSize * y)), resolution);
+                    if (allChunks[x, y].isActive)
+                    {
+                        allChunks[x, y].DrawBlocks(spriteBatch, cameraPosition + (new Vector2(World.chunkSizeX * World.blockSize * x, World.chunkSizeY * World.blockSize * y)), resolution);
+                        allChunks[x, y].DrawItems(spriteBatch, cameraPosition, resolution);
+                    }
                 }
             }
         }
@@ -70,13 +83,17 @@ namespace PixelPlayer
 
         public void Update(GameTime gameTime)
         {
-            foreach (GameItem item in items)
+            if (isActive)
             {
-                item.Update(gameTime);
+                //Update every Item in the Chunk
+                foreach (GameItem item in items)
+                {
+                    item.Update(gameTime);
+                }
             }
         }
 
-        public void Draw(SpriteBatch SpriteBatch, Vector2 cameraPosition, Vector2 resolution)
+        public void DrawBlocks(SpriteBatch SpriteBatch, Vector2 cameraPosition, Vector2 resolution)
         {
             for (int x = 0; x < World.chunkSizeX; x++)
             {
@@ -94,6 +111,9 @@ namespace PixelPlayer
                     }
                 }
             }
+        }
+        public void DrawItems(SpriteBatch SpriteBatch, Vector2 cameraPosition, Vector2 resolution)
+        {
             foreach (GameItem item in items)
             {
                 //If Item is insight of the screen
@@ -111,16 +131,13 @@ namespace PixelPlayer
     {
         public Material material { get; }
         public float health { get; set; }
-        public Vector2 chunkGridPosition { get; }
-        public BoundingBox2D boundingBox { get; }
+        public Material.Type type { get; }
 
-        public Block(Material material,Vector2 chunkGridPosition, Vector2 chunkPosition)
+        public Block(Material material)
         {
             this.material = material;
-            this.chunkGridPosition = chunkGridPosition;
             health = material.durability;
-
-            boundingBox = new BoundingBox2D((chunkGridPosition * World.blockSize) + new Vector2(chunkPosition.X * World.chunkSizeX * World.blockSize, chunkPosition.Y * World.chunkSizeY * World.blockSize), new Vector2(World.blockSize,World.blockSize));
+            type = material.type;
         }
     }
 
@@ -128,16 +145,25 @@ namespace PixelPlayer
     {
         public Texture2D texture { get; }
         public float durability { get; }
+        public Type type;
 
-        public Material(Texture2D texture, float durabilty)
+        public Material(Texture2D texture, Type type, float durabilty)
         {
             this.texture = texture;
             this.durability = durabilty;
+            this.type = type;
         }
-        public Material(Texture2D texture)
+        public Material(Texture2D texture, Type type)
         {
             this.texture = texture;
             this.durability = 1f;
+        }
+
+        public enum Type
+        {
+            solid,
+            liquid,
+            passable
         }
     }
 }
