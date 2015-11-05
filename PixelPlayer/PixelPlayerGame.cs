@@ -43,6 +43,17 @@ namespace PixelPlayer
 
             cameraPosition = new Vector2(0, 0);
 
+            for (int x = 0; x < World.chunkSizeX; x++)
+            {
+                for (int y = 0; y < World.chunkSizeY; y++)
+                {
+                    world.allChunks[0, 1].Blocks[x, y] = new Block(materials[2]);
+                    //world.allChunks[0, 1].Blocks[x, y].fulllevel = World.blockSize * ((World.blockSize / 4) * 3);
+                    world.allChunks[1, 1].Blocks[x, y] = new Block(materials[3]);
+                    //world.allChunks[1, 1].Blocks[x, y].fulllevel = World.blockSize * ((World.blockSize / 4) * 3);
+                }
+            }
+
             for (int x = 0; x < (World.chunkSizeX / 2); x++)
             {
                 for (int y = 0; y < World.chunkSizeY; y++)
@@ -102,8 +113,8 @@ namespace PixelPlayer
 
             materials[0] = new Material(Content.Load<Texture2D>("Textures/dirt"), Material.Type.solid);
             materials[1] = new Material(Content.Load<Texture2D>("Textures/stone"), Material.Type.solid);
-            testTexture = Content.Load<Texture2D>("Textures/lava");
-            testTexture2 = Content.Load<Texture2D>("Textures/water");
+            materials[2] = new Material(Content.Load<Texture2D>("Textures/water"), Material.Type.liquid);
+            materials[3] = new Material(Content.Load<Texture2D>("Textures/lava"), Material.Type.liquid);
 
             bombTexture = Content.Load<Texture2D>("Textures/bomb");
 

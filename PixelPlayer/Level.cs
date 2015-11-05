@@ -90,6 +90,22 @@ namespace PixelPlayer
                 {
                     item.Update(gameTime);
                 }
+                /*for (int x = 0; x < World.chunkSizeX; x++)
+                {
+                    for (int y = 0; y < World.chunkSizeY; y++)
+                    {
+                        if (Blocks[x, y] != null)
+                        {
+                            if (Blocks[x, y].type.Equals(Material.Type.liquid))
+                            {
+                                if(Blocks[x, y + 1] == null)
+                                {
+
+                                }
+                            }
+                        }
+                    }
+                }*/
             }
         }
 
@@ -106,7 +122,14 @@ namespace PixelPlayer
                         //If Block is insight of the screen
                         if ((posX + World.blockSize > 0) && posX < (int)resolution.X && (posY + World.blockSize) > 0 && posY < (int)resolution.Y)
                         {
-                            SpriteBatch.Draw(Blocks[x, y].material.texture, new Rectangle(posX, posY, World.blockSize, World.blockSize), new Rectangle((World.blockSize * x) % 128, (World.blockSize * y) % 128, World.blockSize, World.blockSize), Color.White);
+                            if ((byte)Blocks[x, y].type == (byte)Material.Type.solid)
+                            {
+                                SpriteBatch.Draw(Blocks[x, y].material.texture, new Rectangle(posX, posY, World.blockSize, World.blockSize), new Rectangle((World.blockSize * x) % 128, (World.blockSize * y) % 128, World.blockSize, World.blockSize), Color.White);
+                            }
+                            else if (Blocks[x,y].type == Material.Type.liquid)
+                            {
+                                SpriteBatch.Draw(Blocks[x, y].material.texture, new Rectangle(posX, posY + (World.blockSize - (int)(Blocks[x, y].fulllevel / World.blockSize)), World.blockSize, (int)(Blocks[x, y].fulllevel / World.blockSize)), new Rectangle((World.blockSize * x) % 128, (World.blockSize * y) % 128, World.blockSize, World.blockSize), Color.White);
+                            }
                         }
                     }
                 }
@@ -132,13 +155,17 @@ namespace PixelPlayer
         public Material material { get; }
         public float health { get; set; }
         public Material.Type type { get; }
+        public int fulllevel { get; set; }
 
         public Block(Material material)
         {
             this.material = material;
             health = material.durability;
             type = material.type;
+            fulllevel = World.blockSize * World.blockSize;
         }
+
+        public void Update(GameTime gameTime) { }
     }
 
     class Material
@@ -157,12 +184,13 @@ namespace PixelPlayer
         {
             this.texture = texture;
             this.durability = 1f;
+            this.type = type;
         }
 
-        public enum Type
+        public enum Type : byte
         {
-            solid,
             liquid,
+            solid,
             passable
         }
     }

@@ -66,6 +66,7 @@ namespace PixelPlayer
             //World Collision calculation
             bool collisionFound = false;
             bool collisionInGreatFound = false;
+            bool velocityEffectedByLiquid = false;
             Vector2 newVelocity = new Vector2(velocity.X, velocity.Y);
             Vector2 endPosition;
             do
@@ -94,7 +95,7 @@ namespace PixelPlayer
 
                         if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY] != null)
                         {
-                            if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == Material.Type.solid)
+                            if ((byte)world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == (byte)Material.Type.solid)
                             {
                                 collisionFound = true;
                                 if (velocity.X >= 0)
@@ -162,6 +163,22 @@ namespace PixelPlayer
                                     }
                                 }
                             }
+                            else if(world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == Material.Type.liquid)
+                            {
+                                if (!velocityEffectedByLiquid)
+                                {
+                                    if (velocity.Y > 1)
+                                    {
+                                        velocity = (velocity / 10) * 9;
+                                    }
+                                    else
+                                    {
+                                        velocity = new Vector2(0, 1);
+                                    }
+                                    velocityEffectedByLiquid = true;
+                                    endPosition = position + velocity;
+                                }
+                            }
                         }
                     }
                 }
@@ -181,7 +198,7 @@ namespace PixelPlayer
 
                             if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY] != null)
                             {
-                                if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == Material.Type.solid)
+                                if ((byte)world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == (byte)Material.Type.solid)
                                 {
                                     collisionInGreatFound = true;
                                     newVelocity = newVelocity / 2;
@@ -230,8 +247,10 @@ namespace PixelPlayer
             //World Collision calculation
             bool collisionFound = false;
             bool collisionInGreatFound = false;
+            bool velocityEffectedByLiquid = false;
             Vector2 newVelocity = new Vector2(velocity.X, velocity.Y);
             Vector2 endPosition;
+            
             do
             {
                 endPosition = position + newVelocity;
@@ -258,7 +277,7 @@ namespace PixelPlayer
 
                         if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY] != null)
                         {
-                            if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == Material.Type.solid)
+                            if ((byte)world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == (byte)Material.Type.solid)
                             {
                                 collisionFound = true;
                                 if (velocity.X >= 0)
@@ -330,6 +349,24 @@ namespace PixelPlayer
                                     }
                                 }
                             }
+                            else if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == Material.Type.liquid)
+                            {
+                                if (!velocityEffectedByLiquid)
+                                {
+                                    if (physicVelocity.Y > 1f)
+                                    {
+                                        physicVelocity = (physicVelocity / 10) * 9;
+                                        velocity = physicVelocity + movement;
+                                        
+                                    }
+                                    else
+                                    {
+                                        velocity = new Vector2(0, 1f) + movement;
+                                    }
+                                    velocityEffectedByLiquid = true;
+                                    endPosition = position + velocity;
+                                }
+                            }
                         }
                     }
                 }
@@ -349,7 +386,7 @@ namespace PixelPlayer
 
                             if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY] != null)
                             {
-                                if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == Material.Type.solid)
+                                if ((byte)world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == (byte)Material.Type.solid)
                                 {
                                     collisionInGreatFound = true;
                                     newVelocity = newVelocity / 2;
