@@ -233,10 +233,22 @@ namespace PixelPlayer
     {
         protected Vector2 movement;
         protected Vector2 physicVelocity;
+        private bool _touchesLiquid = false;
+        private bool _touchesGround = false;
+
+
         public GameFigure(Vector2 position, Vector2 size, World world) : base(position, size, world)
         {
             movement = new Vector2(0, 0);
             physicVelocity = new Vector2(0, 0);
+        }
+        public bool touchesGround
+        {
+            get { return _touchesGround; }
+        }
+        public bool touchesLiquid
+        {
+            get { return _touchesLiquid; }
         }
 
         public override void Update(GameTime gameTime)
@@ -289,6 +301,8 @@ namespace PixelPlayer
                                             endPosition.Y = (y * World.blockSize) - size.Y;
                                             velocity = new Vector2(velocity.X, 0);
                                             physicVelocity = new Vector2(0, 0);
+
+                                            _touchesGround = true;
                                         }
                                         else if ((velocity.Y < 0) && ((y * World.blockSize) + World.blockSize <= position.Y) && ((y * World.blockSize) + World.blockSize > endPosition.Y))
                                         {
@@ -307,6 +321,8 @@ namespace PixelPlayer
                                             endPosition.Y = (y * World.blockSize) - size.Y;
                                             velocity = new Vector2(velocity.X, 0);
                                             physicVelocity = new Vector2(0, 0);
+
+                                            _touchesGround = true;
                                         }
                                         else if ((velocity.Y < 0) && ((y * World.blockSize) + World.blockSize <= position.Y) && ((y * World.blockSize) + World.blockSize > endPosition.Y))
                                         {
@@ -351,9 +367,10 @@ namespace PixelPlayer
                             }
                             else if (world.allChunks[ChunkX, ChunkY].Blocks[PosX % World.chunkSizeX, PosY % World.chunkSizeY].type == Material.Type.liquid)
                             {
+                                _touchesLiquid = true;
                                 if (!velocityEffectedByLiquid)
                                 {
-                                    if (physicVelocity.Y > 1f)
+                                    if (physicVelocity.Y > 1f || physicVelocity.Y < 0)
                                     {
                                         physicVelocity = (physicVelocity / 10) * 9;
                                         velocity = physicVelocity + movement;
@@ -397,6 +414,8 @@ namespace PixelPlayer
                 }
             } while (!collisionFound && collisionInGreatFound && (Math.Abs(newVelocity.X) > velocity.X / 8 || Math.Abs(newVelocity.Y) > velocity.Y / 8));
 
+            if (velocity.Y != 0) _touchesGround = false;
+
             position = endPosition;
             if (position.X < 0) position = new Vector2((world.worldsize.X * World.chunkSizeX * World.blockSize) - position.X, position.Y);
             else if(position.X > (world.worldsize.X * World.chunkSizeX * World.blockSize)) position = new Vector2(position.X - (world.worldsize.X * World.chunkSizeX * World.blockSize), position.Y);
@@ -419,8 +438,8 @@ namespace PixelPlayer
 
         public GamePlayer(Vector2 position, Vector2 size, World world) : base(position, size, world)
         {
-            speed = 10;
-            jumpEnergy = 30;
+            speed = 7 * 20;
+            jumpEnergy = 150 * 20;
             _currentChunkPosition = new Vector2((int)position.X / (World.chunkSizeX * World.blockSize),(int)position.Y / (World.chunkSizeX * World.blockSize));
 
             _boundingBox = new BoundingBox2D(this, size);
@@ -429,8 +448,18 @@ namespace PixelPlayer
         public override void Update(GameTime gameTime)
         {
             GamePadState state = GamePad.GetState(PlayerIndex.One);
-
-            movement = new Vector2(state.ThumbSticks.Left.X * speed * (float)gameTime.ElapsedGameTime.TotalSeconds, -(state.ThumbSticks.Left.Y * jumpEnergy * (float)gameTime.ElapsedGameTime.TotalSeconds)) * 20;
+            if (state.IsConnected)
+            {
+                movement = new Vector2(state.ThumbSticks.Left.X * speed * (float)gameTime.ElapsedGameTime.TotalSeconds, 0);
+                if (touchesGround && state.ThumbSticks.Left.Y < -0.1f) { physicVelocity += new Vector2(0, -1.0f * jumpEnergy * (float)gameTime.ElapsedGameTime.TotalSeconds); }
+            }
+            else
+            {
+                movement = new Vector2(0, 0);
+                if (Keyboard.GetState().IsKeyDown(Keys.A)) { movement += new Vector2(-1.0f * speed * (float)gameTime.ElapsedGameTime.TotalSeconds, 0); }
+                if (Keyboard.GetState().IsKeyDown(Keys.D)) { movement += new Vector2(1.0f * speed * (float)gameTime.ElapsedGameTime.TotalSeconds, 0); }
+                if (touchesGround && Keyboard.GetState().IsKeyDown(Keys.W)) { physicVelocity += new Vector2(0, -1.0f * jumpEnergy * (float)gameTime.ElapsedGameTime.TotalSeconds); }
+            }
 
             base.Update(gameTime);
 

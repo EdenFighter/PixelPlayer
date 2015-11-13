@@ -49,7 +49,7 @@ namespace PixelPlayer
                 {
                     world.allChunks[0, 1].Blocks[x, y] = new Block(materials[2]);
                     //world.allChunks[0, 1].Blocks[x, y].fulllevel = World.blockSize * ((World.blockSize / 4) * 3);
-                    world.allChunks[1, 1].Blocks[x, y] = new Block(materials[3]);
+                    world.allChunks[1, 1].Blocks[x, y] = new Block(materials[1]);
                     //world.allChunks[1, 1].Blocks[x, y].fulllevel = World.blockSize * ((World.blockSize / 4) * 3);
                 }
             }
@@ -136,29 +136,36 @@ namespace PixelPlayer
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            if (GamePad.GetState(PlayerIndex.One).Buttons.B == ButtonState.Pressed && !BPressed)
+            if ((GamePad.GetState(PlayerIndex.One).Buttons.B == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.B)) && !BPressed)
             {
                 for (int x = 0; x < 64; x++)
                 {
-                    for (int y = 0; y < (World.chunkSizeY / 2); y++)
+                    for (int y = 0; y < (World.chunkSizeY); y++)
                     {
-                        world.allChunks[1, 1].Blocks[x, y] = null;
+                        if (world.allChunks[1, 1].Blocks[x, y] != null)
+                        {
+                            world.allChunks[1, 1].Blocks[x, y] = null;
+                        }
+                        else
+                        {
+                            world.allChunks[1, 1].Blocks[x, y] = new Block(materials[1]);
+                        }
                     }
                 }
                 world.allChunks[0, 1].isActive = !world.allChunks[0, 1].isActive;
                 BPressed = true;
             }
-            else if (GamePad.GetState(PlayerIndex.One).Buttons.B == ButtonState.Released)
+            else if (GamePad.GetState(PlayerIndex.One).Buttons.B == ButtonState.Released && Keyboard.GetState().IsKeyUp(Keys.B))
             {
                 BPressed = false;
             }
-            if (GamePad.GetState(PlayerIndex.One).Buttons.A == ButtonState.Pressed && !APressed)
+            if ((GamePad.GetState(PlayerIndex.One).Buttons.A == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.F)) && !APressed)
             {
                 GameItem bomb = new GameItem(new Vector2(player.position.X + (player.size.X / 2) - 20, player.position.Y + (player.size.Y / 2) - 20),new Vector2(40,40), bombTexture, world);
                 bomb.velocity = new Vector2(state.ThumbSticks.Right.X * 20 * (float)gameTime.ElapsedGameTime.TotalSeconds, -(state.ThumbSticks.Right.Y * 20 * (float)gameTime.ElapsedGameTime.TotalSeconds)) * 20;
                 APressed = true;
             }
-            else if (GamePad.GetState(PlayerIndex.One).Buttons.A == ButtonState.Released)
+            else if (GamePad.GetState(PlayerIndex.One).Buttons.A == ButtonState.Released && Keyboard.GetState().IsKeyUp(Keys.F))
             {
                 APressed = false;
             }
